@@ -1,1 +1,2 @@
 exportPattern("^[[:alpha:]]+")
+import(nifti.io, nifti.draw, nifti.cluster, mmand, ggplot2, reshape2, gridExtra)
