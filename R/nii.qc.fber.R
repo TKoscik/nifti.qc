@@ -1,8 +1,9 @@
-nii.qc.anat.fber <- function(nii.img, nii.vol=1,
-                             brain.mask, brain.vol=1, brain.dir="gt", brain.thresh = 0,
-                             frame.mask=NULL, frame.vol=1, frame.dir="gt", frame.thresh = 0) {
+nii.qc.fber <- function(
+  img.nii, img.vol=1L,
+  brain.mask, brain.vol=1L, brain.dir="gt", brain.thresh = 0,
+  frame.mask=NULL, frame.vol=1L, frame.dir="gt", frame.thresh = 0) {
 
-  img <- read.nii.volume(nii.img, nii.vol)
+  img <- read.nii.volume(img.nii, img.vol)
 
   brain <- read.nii.volume(brain.nii, brain.vol)
   brain <- switch(brain.dir,

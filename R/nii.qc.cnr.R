@@ -1,7 +1,8 @@
-nii.qc.anat.cnr <- function(img.nii, img.vol,
-                            gm.nii, gm.vol=1, gm.dir="gt", gm.thresh=0,
-                            wm.nii, wm.vol=1, wm.dir="gt", wm.thresh=0,
-                            air.nii, air.vol, air.dir="eq", air.thresh=1) {
+nii.qc.cnr <- function(
+  img.nii, img.vol=1L,
+  gm.nii, gm.vol=1L, gm.dir="gt", gm.thresh=0,
+  wm.nii, wm.vol=1L, wm.dir="gt", wm.thresh=0,
+  air.nii, air.vol=1L, air.dir="eq", air.thresh=1) {
 
   img <- read.nii.volume(img.nii, img.vol)
 

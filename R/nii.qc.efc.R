@@ -1,7 +1,8 @@
-nii.qc.anat.efc <- function(nii.img, nii.vol=1,
-                            frame.mask=NULL, frame.vol=1, frame.dir, frame.thresh = 0) {
+nii.qc.efc <- function(
+  img.nii, img.vol=1L,
+  frame.mask=NULL, frame.vol=1L, frame.dir, frame.thresh = 0) {
 
-  img <- read.nii.volume(nii.img, nii.vol)
+  img <- read.nii.volume(img.nii, img.vol)
 
   if (!is.null(frame.mask)) {
     mask <- read.nii.volume(frame.mask, frame.vol)

@@ -1,5 +1,6 @@
-nii.qc.descriptive <- function(img.nii, img.vol=1,
-                               mask.nii, mask.vol=1, mask.dir="gt", mask.thresh=0) {
+nii.qc.descriptive <- function(
+  img.nii, img.vol=1L,
+  mask.nii, mask.vol=1L, mask.dir="gt", mask.thresh=0) {
 
   img <- read.nii.volume(img.nii, img.vol)
 

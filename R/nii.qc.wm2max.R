@@ -1,6 +1,8 @@
-nii.qc.anat.wm2max <- function(img.nii, img.vol,
-                               wm.nii, wm.vol=1, wm.dir="gt", wm.thresh=0) {
-  img <- read.nii.volume(nii.img, nii.vol)
+nii.qc.wm2max <- function(
+  img.nii, img.vol=1L,
+  wm.nii, wm.vol=1L, wm.dir="gt", wm.thresh=0) {
+
+  img <- read.nii.volume(img.nii, img.vol)
 
   wm <- read.nii.volume(wm.nii, wm.vol)
   wm <- switch(wm.dir,

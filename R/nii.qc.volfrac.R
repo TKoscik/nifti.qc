@@ -1,24 +1,25 @@
-nii.qc.anat.volfrac <- function(brain.nii, brain.vol=1, brain.dir="eq", brain.thresh=1,
-                                tissue.nii, tissue.vol=1, tissue.dir="eq", tissue.thresh=1) {
+nii.qc.volfrac <- function(
+  whole.nii, whole.vol=1L, whole.dir="eq", whole.thresh=1,
+  part.nii, part.vol=1L, part.dir="eq", part.thresh=1) {
 
-  brain <- read.nii.volume(brain.nii, brain.vol)
-  brain <- switch(brain.dir,
-                  `gt`=(brain > brain.thresh) * 1,
-                  `ge`=(brain >= brain.thresh) * 1,
-                  `lt`=(brain < brain.thresh) * 1,
-                  `le`=(brain <= brain.thresh) * 1,
-                  `eq`=(brain == brain.thresh) * 1)
-  total.vol <- sum(brain)
+  whole <- read.nii.volume(whole.nii, whole.vol)
+  whole <- switch(whole.dir,
+                  `gt`=(whole > whole.thresh) * 1,
+                  `ge`=(whole >= whole.thresh) * 1,
+                  `lt`=(whole < whole.thresh) * 1,
+                  `le`=(whole <= whole.thresh) * 1,
+                  `eq`=(whole == whole.thresh) * 1)
+  whole <- sum(whole)
 
-  tissue <- read.nii.volume(tissue.nii, tissue.vol)
-  tissue <- switch(tissue.dir,
-                  `gt`=(tissue > tissue.thresh) * 1,
-                  `ge`=(tissue >= tissue.thresh) * 1,
-                  `lt`=(tissue < tissue.thresh) * 1,
-                  `le`=(tissue <= tissue.thresh) * 1,
-                  `eq`=(tissue == tissue.thresh) * 1)
-  tissue.vol <- sum(tissue)
+  part <- read.nii.volume(part.nii, part.vol)
+  part <- switch(part.dir,
+                  `gt`=(part > part.thresh) * 1,
+                  `ge`=(part >= part.thresh) * 1,
+                  `lt`=(part < part.thresh) * 1,
+                  `le`=(part <= part.thresh) * 1,
+                  `eq`=(part == part.thresh) * 1)
+  part <- sum(part)
 
-  volfrac <- tissue.vol / total.vol
+  volfrac <- part / whole
   return(volfrac)
 }

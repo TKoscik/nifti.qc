@@ -1,9 +1,10 @@
-nii.qc.anat.mortamet <- function(nii.img, nii.vol,
-                                 air.nii, air.vol, air.dir="eq", air.thresh=1,
-                                 art.nii, art.vol, art.dir="eq", art.thresh=1) {
+nii.qc.mortamet <- function(
+  img.nii, img.vol=1L,
+  air.nii, air.vol=1L, air.dir="eq", air.thresh=1,
+  art.nii, art.vol=1L, art.dir="eq", art.thresh=1) {
 
   # load data ------------------------------
-  img <- read.nii.volume(nii.img, nii.vol)
+  img <- read.nii.volume(img.nii, img.vol)
 
   air <- read.nii.volume(air.nii, air.vol)
   air <- switch(air.dir,

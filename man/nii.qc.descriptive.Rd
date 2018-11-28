@@ -1,12 +1,12 @@
-\name{nii.qc.snr}
-\alias{nii.qc.snr}
-\title{Regional Signal-to-Noise Ratio}
+\name{nii.qc.descriptive}
+\alias{nii.qc.descriptive}
+\title{Descriptive statistics on voxel intensities within an ROI}
 \description{
-Calculate the signal to noise ratio within the masked region.
-\deqn{\displaystyle SNR = \frac{\mu_ROI}{\sigma_ROI\sqrt{\frac{n}{\left(n-1\right)}}}}{SNR = \mu_ROI/[\sigma_ROI\sqrt(n/(n-1))]}
+Descriptive statistics on voxel intensities within an ROI.
+Including: mean, standard deviation, median, median absolute deviation, skewness, kurtosis, 5\% and 95\% quantiles, and a density plot of intensities.
 }
 \usage{
-nii.qc.snr(img.nii, img.vol=1L, mask.nii, mask.vol=1L, mask.dir="gt", mask.thresh=0)
+nii.qc.descriptive(img.nii, img.vol=1L, mask.nii, mask.vol=1L, mask.dir="gt", mask.thresh=0)
 }
 \arguments{
   \item{img.nii}{Full directory listing to desired nifti image (unzipped)}
@@ -17,7 +17,7 @@ nii.qc.snr(img.nii, img.vol=1L, mask.nii, mask.vol=1L, mask.dir="gt", mask.thres
   \item{mask.thresh=0}{Value at which to threshold the mask image to generate an ROI. E.g., for binary masks, where the value 1 indicates the ROI, default of >0, will generate the appropriate mask}
 }
 \value{
-a numeric value indicating signal-to-noise-ratio
+returns a named list with descriptors of central tendency and a density plot of image intensities within the masked region
 }
 \author{
   Timothy R. Koscik <timkoscik+niiqc@gmail.com>

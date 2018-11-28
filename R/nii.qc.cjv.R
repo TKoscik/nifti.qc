@@ -1,8 +1,9 @@
-nii.qc.anat.cjv <- function(nii.img, nii.vol=1,
-                            gm.nii, gm.vol=1, gm.dir="gt", gm.thresh=0,
-                            wm.nii, wm.vol=1, wm.dir="gt", wm.thresh=0) {
+nii.qc.cjv <- function(
+  img.nii, img.vol=1L,
+  gm.nii, gm.vol=1L, gm.dir="gt", gm.thresh=0,
+  wm.nii, wm.vol=1L, wm.dir="gt", wm.thresh=0) {
 
-  img <- read.nii.volume(nii.img, nii.vol)
+  img <- read.nii.volume(img.nii, img.vol)
 
   gm <- read.nii.volume(gm.nii, gm.vol)
   gm <- switch(gm.dir,

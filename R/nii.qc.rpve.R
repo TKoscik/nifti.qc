@@ -1,5 +1,4 @@
-nii.qc.anat.rpve <- function(tissue.prob, tissue.vol) {
-
+nii.qc.rpve <- function(tissue.prob, tissue.vol=1L) {
   pvmap <- read.nii.volume(tissue.nii, tissue.vol)
   pvmap[pvmap < 0] <- 0
   pvmap[pvmap > 1] <- 1

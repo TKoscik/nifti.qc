@@ -1,6 +1,7 @@
-nii.qc.anat.snr_d <- function(img.nii, img.vol,
-                              mask.nii, mask.vol, mask.dir="gt", mask.thresh=0,
-                              air.nii, air.vol, air.dir="eq", air.thresh=1) {
+nii.qc.snrd <- function(
+  img.nii, img.vol,
+  mask.nii, mask.vol=1L, mask.dir="gt", mask.thresh=0,
+  air.nii, air.vol=1L, air.dir="eq", air.thresh=1) {
 
   img <- read.nii.volume(img.nii, img.vol)
 
@@ -23,6 +24,5 @@ nii.qc.anat.snr_d <- function(img.nii, img.vol,
   air <- which(air==1, arr.ind=TRUE)
 
   snr_d <- (mean(img[mask]))/(sqrt(2/(4-pi))*sd(img[air]))
-
   return(snr_d)
 }

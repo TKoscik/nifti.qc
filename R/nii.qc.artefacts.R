@@ -1,8 +1,9 @@
-nii.qc.anat.artefacts <- function(img.nii, img.vol,
-                                  air.nii, air.vol, air.dir="eq", air.thresh=1,
-                                  save.dir, file.name) {
+nii.qc.artefacts <- function(
+  img.nii, img.vol=1L,
+  air.nii, air.vol=1L, air.dir="eq", air.thresh=1,
+  save.dir, file.name) {
 
-  img <- read.nii.volume(nii.img, img.vol)
+  img <- read.nii.volume(img.nii, img.vol)
   air <- read.nii.volume(air.nii, air.vol)
   air <- switch(air.dir,
                 `gt`=(air > air.thresh) * 1,
@@ -30,4 +31,5 @@ nii.qc.anat.artefacts <- function(img.nii, img.vol,
            pixdim = unlist(nii.hdr(nii.img, "pixim")),
            orient = nii.orient(nii.img))
   write.nii.volume(paste0(save.dir, "/", file.name), 1, img)
+  return(img)
 }
