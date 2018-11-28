@@ -10,5 +10,7 @@ Both MRIQC and PCP utilize the 3-clause BSD license and the copyrights are retai
 
 ## Suggested citations:
 > Shehzad Z, Giavasis S, Li Q, Benhajali Y, Yan C, Yang Z, Milham M, Bellec P, Craddock C. The Preprocessed Connectomes Project Quality Assessment Protocol—a resource for measuring the quality of MRI data. Frontiers in neuroscience. 2015.  
+  
 > Esteban O, Birman D, Schaer M, Koyejo OO, Poldrack RA, Gorgolewski KJ. MRIQC: Advancing the automatic prediction of image quality in MRI from unseen sites. PloS one. 2017 Sep 25;12(9):e0184661.  
-> Koscik TR. nifti.qc. Open-source: github.com/tkoscik/nifti.qc. 2017.
+  
+> Koscik TR. nifti.qc. Open-source: github.com/tkoscik/nifti.qc. 2017.  
