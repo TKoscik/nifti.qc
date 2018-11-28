@@ -1,5 +1,5 @@
 nii.qc.tpm <- function(template.nii, template.vol,
-                       tissue.nii, tissue.nii) {
+                       tissue.nii, tissue.vol) {
   template <- as.numeric(read.nii.volume(template.nii, template.vol))
   tissue <- as.numeric(read.nii.volume(tissue.nii, tissue.vol))
 
