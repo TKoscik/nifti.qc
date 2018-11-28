@@ -6,7 +6,7 @@ NIFTI.QC is an open-source project with the goal of implementing neuroimage qual
 Portions of NIFTI.QC are derived from and are further influenced by [MRIQC](https://mriqc.readthedocs.io/en/stable/index.html) and the [PCP Quality Assessment Protocol](http://preprocessed-connectomes-project.org/quality-assessment-protocol/index.html)
 
 Both MRIQC and PCP utilize the 3-clause BSD license and the copyrights are retained given this derivative work. We have appended copyright for the R implementation, modifications, and novel aspects of these tools.  
-[License](https://github.com/TKoscik/nifti.qc/LICENSE.txt)
+[License](https://github.com/TKoscik/nifti.qc/blob/master/LICENSE.txt)
 
 ## Suggested citations:
 > Shehzad Z, Giavasis S, Li Q, Benhajali Y, Yan C, Yang Z, Milham M, Bellec P, Craddock C. The Preprocessed Connectomes Project Quality Assessment Protocol—a resource for measuring the quality of MRI data. Frontiers in neuroscience. 2015.  
