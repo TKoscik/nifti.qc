@@ -3,7 +3,7 @@
 \title{Regional Signal-to-Noise Ratio}
 \description{
 Calculate the signal to noise ratio within the masked region.
-\deqn{\displaystyle \text{SNR} = \frac{\mu_F}{\sqrt{\frac{2}{4-\pi}}\,\sigma_\text{air}}}
+\deqn{\displaystyle SNR = \frac{\mu_ROI}{\sigma_ROI\sqrt{\frac{n}{\left(n-1\right)}}}}
 }
 \usage{
 nii.qc.anat.snr(img.nii, img.vol=1, mask.nii, mask.vol=1, mask.dir="gt", mask.thresh=0)
