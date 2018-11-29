@@ -1,4 +1,5 @@
 nii.qc.fwhm <- function(img.nii, mask.nii, save.dir, file.name) {
+
   afni.fwhm.cmd <- sprintf("3dFWHMx -mask %s -out %s/%s %s",
                            mask.nii, save.dir, file.name, img.nii)
   system(command = afni.fwhm.cmd)

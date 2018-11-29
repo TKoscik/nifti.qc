@@ -6,22 +6,11 @@ nii.qc.fber <- function(
   img <- read.nii.volume(img.nii, img.vol)
 
   brain <- read.nii.volume(brain.nii, brain.vol)
-  brain <- switch(brain.dir,
-               `gt`=(brain > brain.thresh) * 1,
-               `ge`=(brain >= brain.thresh) * 1,
-               `lt`=(brain < brain.thresh) * 1,
-               `le`=(brain <= brain.thresh) * 1,
-               `eq`=(brain == brain.thresh) * 1)
-  brain <- which(brain==1, arr.ind=TRUE)
+  brain <- thresh.apply(brain, brain.dir, brain.thresh, "index.arr")
 
   if (!is.null(frame.mask)) {
     frame <- read.nii.volume(frame.nii, frame.vol)
-    frame <- switch(frame.dir,
-                 `gt`=(frame > frame.thresh) * 1,
-                 `ge`=(frame >= frame.thresh) * 1,
-                 `lt`=(frame < frame.thresh) * 1,
-                 `le`=(frame <= frame.thresh) * 1,
-                 `eq`=(frame == frame.thresh) * 1)
+    frame <- thresh.apply(frame, frame.dir, frame.thresh, "binary")
   } else {
     frame <- array(1, dim=dim(img))
   }

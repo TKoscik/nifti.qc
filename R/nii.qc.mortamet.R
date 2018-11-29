@@ -7,20 +7,10 @@ nii.qc.mortamet <- function(
   img <- read.nii.volume(img.nii, img.vol)
 
   air <- read.nii.volume(air.nii, air.vol)
-  air <- switch(air.dir,
-                `gt`=(air > air.thresh) * 1,
-                `ge`=(air >= air.thresh) * 1,
-                `lt`=(air < air.thresh) * 1,
-                `le`=(air <= air.thresh) * 1,
-                `eq`=(air == air.thresh) * 1)
+  air <- thresh.apply(air, air.dir, air.thresh, "binary")
 
   art <- read.nii.volume(art.nii, art.vol)
-  art <- switch(art.dir,
-                `gt`=(art > art.thresh) * 1,
-                `ge`=(art >= art.thresh) * 1,
-                `lt`=(art < art.thresh) * 1,
-                `le`=(art <= art.thresh) * 1,
-                `eq`=(art == art.thresh) * 1)
+  art <- thresh.apply(art, art.dir, art.thresh, "binary")
 
   # calculate qi1 ------------------
   qi1 <- sum(art == 1) / sum(air == 1)
