@@ -1,6 +1,6 @@
 nii.qc.rpve <- function(tissue.prob, tissue.vol=1L) {
 
-  pvmap <- read.nii.volume(tissue.nii, tissue.vol)
+  pvmap <- read.nii.volume(tissue.prob, tissue.vol)
   pvmap[pvmap < 0] <- 0
   pvmap[pvmap > 1] <- 1
   total.vol <- sum(pvmap > 0)
