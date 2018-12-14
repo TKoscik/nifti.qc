@@ -20,10 +20,10 @@ nii.qc.fber <- function(
   fg.mu <- median(abs(img[brain>0])^2)
   bg.mu <- median(abs(img[frame>0])^2)
 
-  if (bg_mu < 1e-3) {
+  if (bg.mu < 1e-3) {
     fber <- 0
   } else {
-    fber <- fg_mu / bg_mu
+    fber <- fg.mu / bg.mu
   }
   return(fber)
 }
