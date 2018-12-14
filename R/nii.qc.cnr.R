@@ -11,6 +11,6 @@ nii.qc.cnr <- function(
   wm <- thresh.apply(wm, wm.dir, wm.thresh, "index.arr")
   air <- read.nii.volume(air.nii, air.vol)
   air <- thresh.apply(air, air.dir, air.thresh, "index.arr")
-  cnr <- abs(mean(img[gm] - img[wm]))/sqrt(sd(img[air])^2 + sd(img[gm])^2 + sd(img[wm])^2)
+  cnr <- abs(mean(img[gm]) - mean(img[wm])))/sqrt(sd(img[air])^2 + sd(img[gm])^2 + sd(img[wm])^2)
   return(cnr)
 }
