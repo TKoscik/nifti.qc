@@ -22,8 +22,8 @@ nii.qc.artefacts <- function(
   # save artefact image
   init.nii(file.name = paste0(save.dir, "/", file.name),
            dims = dims(img),
-           pixdim = unlist(nii.hdr(nii.img, "pixim")),
-           orient = nii.orient(nii.img))
+           pixdim = unlist(nii.hdr(img.nii, "pixim")),
+           orient = nii.orient(img.nii))
   write.nii.volume(paste0(save.dir, "/", file.name), 1, img)
   return(img)
 }
