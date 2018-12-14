@@ -60,10 +60,10 @@ thresh.apply <- function(data,
 
   output <- switch(which.format[1],
     `zeroed` = data * which.data,
-    `logical` = as.logical(which.data),
+    `logical` = array(as.logical(which.data), dim=dim(data)),
     `binary` = which.data,
-    `index.vec` = which(as.logical(which.data)),
-    `index.arr` = which(as.logical(which.data), arr.ind = TRUE))
+    `index.vec` = which(array(as.logical(which.data), dim=dim(data))),
+    `index.arr` = which(array(as.logical(which.data), dim=dim(data)), arr.ind = TRUE))
 
   return(output)
 }
