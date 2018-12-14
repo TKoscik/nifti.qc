@@ -17,8 +17,8 @@ nii.qc.fber <- function(
   frame[brain] <- 0
   frame <- which(frame==1, arr.ind=TRUE)
 
-  fg.mu <- median(abs(img[brain>0])^2)
-  bg.mu <- median(abs(img[frame>0])^2)
+  fg.mu <- median(abs(img[brain])^2)
+  bg.mu <- median(abs(img[frame])^2)
 
   if (bg.mu < 1e-3) {
     fber <- 0
