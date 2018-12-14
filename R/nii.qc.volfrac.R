@@ -7,7 +7,7 @@ nii.qc.volfrac <- function(
   whole <- sum(whole)
 
   part <- read.nii.volume(part.nii, part.vol)
-  whole <- thresh.apply(part, part.dir, part.thresh, "binary")
+  part <- thresh.apply(part, part.dir, part.thresh, "binary")
   part <- sum(part)
 
   volfrac <- part / whole
