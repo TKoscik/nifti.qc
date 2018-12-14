@@ -62,8 +62,8 @@ thresh.apply <- function(data,
     `zeroed` = data * which.data,
     `logical` = as.logical(which.data),
     `binary` = which.data,
-    `index.vec` = which(which.data),
-    `index.arr` = which(which.data, arr.ind = TRUE))
+    `index.vec` = which(as.logical(which.data)),
+    `index.arr` = which(as.logical(which.data), arr.ind = TRUE))
 
   return(output)
 }
