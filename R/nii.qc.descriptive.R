@@ -7,14 +7,15 @@ nii.qc.descriptive <- function(
   mask <- thresh.apply(mask, mask.dir, mask.thresh, "index.arr")
   img <- img[mask]
   summary <- list()
-  summary$mean <- mean(img, na.rm=TRUE)
-  summary$sd <- sd(img, na.rm=TRUE)
-  summary$median <- median(img, na.rm=TRUE)
-  summary$mad <- mad(img, na.rm=TRUE)
-  summary$skew <- skewness(img, na.rm=TRUE)
-  summary$kurtosis <- kurtosis(img, na.rm=TRUE)
-  summary$q05 <- quantile(img, 0.05, na.rm=TRUE)
-  summary$q95 <- quantile(img, 0.95, na.rm=TRUE)
+  summary$stats <- data.frame(
+    mean = mean(img, na.rm=TRUE),
+    sd <- sd(img, na.rm=TRUE),
+    median <- median(img, na.rm=TRUE),
+    mad <- mad(img, na.rm=TRUE),
+    skew <- skewness(img, na.rm=TRUE),
+    kurtosis <- kurtosis(img, na.rm=TRUE),
+    q05 <- quantile(img, 0.05, na.rm=TRUE),
+    q95 <- quantile(img, 0.95, na.rm=TRUE))
   df <- data.frame(Intensity=img)
   summary$plot <- ggplot(df, aes(x=Intensity)) +
     theme_bw() +
