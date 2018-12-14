@@ -5,7 +5,7 @@ nii.qc.fber <- function(
 
   img <- read.nii.volume(img.nii, img.vol)
 
-  brain <- read.nii.volume(brain.nii, brain.vol)
+  brain <- read.nii.volume(brain.mask, brain.vol)
   brain <- thresh.apply(brain, brain.dir, brain.thresh, "index.arr")
 
   if (!is.null(frame.mask)) {
