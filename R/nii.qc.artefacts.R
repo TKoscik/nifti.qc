@@ -5,7 +5,7 @@ nii.qc.artefacts <- function(
 
   img <- read.nii.volume(img.nii, img.vol)
   air <- read.nii.volume(air.nii, air.vol)
-  air <- thresh.apply(mask,air.dir,air.thresh, "index.arr")
+  air <- thresh.apply(air,air.dir,air.thresh, "index.arr")
 
   # find background threshold (mode excluding 0)
   img[air] <- scale(img[air],
