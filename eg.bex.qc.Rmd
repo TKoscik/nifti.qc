@@ -1,0 +1,168 @@
+---
+title: "Brain Extraction Quality Control"
+author: "INC"
+date: '`r format(Sys.time(), "%Y-%m-%d %H:%M:%S-%z")`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+rm(list=ls())
+gc()
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE)
+```
+
+****
+
+#### Researcher: /Shared/research_lab
+#### Project: project_name
+#### Participant: sub-231
+#### Session: ses-328zk16wb6
+##### Image: T1w
+
+```{r}
+library(nifti.draw)
+library(nifti.io)
+library(R.utils)
+library(ggplot2)
+library(reshape2)
+library(gridExtra)
+library(raster)
+```
+
+```{r}
+root.dir <- "/Shared/nopoulos/sca_pilot/derivatives/anat/prep/sub-231/ses-328zk16wb6"
+temp.dir <- "/Shared/koscikt_scratch/nifti_qc_scratch"
+if (!dir.exists(temp.dir)) {
+  dir.create(temp.dir)
+}
+base.image <- "/sub-231_ses-328zk16wb6_site-00201_acq-sagMPRAGEPROMO_T1w_prep-denoise.nii"
+# gunzip(filename=paste0(root.dir, base.image, ".gz"),
+       # destname=paste0(temp.dir, base.image), remove=FALSE)
+
+mask.afni <- "/sub-231_ses-328zk16wb6_site-00201_prep-bex0AFNI.nii"
+# gunzip(filename=paste0(root.dir, mask.afni, ".gz"),
+       # destname=paste0(temp.dir, mask.afni), remove=FALSE)
+
+mask.ants <- "/sub-231_ses-328zk16wb6_site-00201_prep-bex0ANTS.nii"
+# gunzip(filename=paste0(root.dir, mask.ants, ".gz"),
+       # destname=paste0(temp.dir, mask.ants), remove=FALSE)
+
+mask.bet <- "/sub-231_ses-328zk16wb6_site-00201_prep-bex0BET.nii"
+# gunzip(filename=paste0(root.dir, mask.bet, ".gz"),
+       # destname=paste0(temp.dir, mask.bet), remove=FALSE)
+
+mask.malf <- "/sub-231_ses-328zk16wb6_site-00201_prep-bex0MALF.nii"
+# gunzip(filename=paste0(root.dir, mask.malf, ".gz"),
+       # destname=paste0(temp.dir, mask.malf), remove=FALSE)
+```
+
+****
+
+```{r}
+orientation = "sagittal"
+which.dim <- switch(orientation, `axial`=3, `coronal`=2, `sagittal`=1)
+```
+
+```{r}
+base.image <- read.nii.volume(paste0(temp.dir, base.image), 1)
+
+mask.afni <- read.nii.volume(paste0(temp.dir, mask.afni), 1)
+mask.ants <- read.nii.volume(paste0(temp.dir, mask.ants), 1)
+mask.bet <- read.nii.volume(paste0(temp.dir, mask.bet), 1)
+mask.malf <- read.nii.volume(paste0(temp.dir, mask.malf), 1)
+
+mask.all <- ((mask.afni + mask.ants + mask.bet + mask.malf) > 0)*1
+which.slices <- numeric()
+for (i in 1:dim(base.image)[which.dim]) {
+  slice = switch(orientation,
+    `axial`=mask.all[ , ,i],
+    `coronal`=mask.all[ ,i, ],
+    `sagittal`=mask.all[i, , ])
+  if (sum(slice) != 0) {
+    which.slices <- c(which.slices, i)
+  }
+}
+slices <- which.slices[seq(1,length(which.slices),length.out=30)]
+slices <- slices[-c(1, 2, 3, 4, 5,
+  length(slices)-5, length(slices)-4, length(slices)-2, length(slices)-1, length(slices))]
+
+if (orientation == "axial") {
+  base.image <- base.image[ , , slices]
+  mask.afni <- mask.afni[ , , slices]
+  mask.ants <- mask.ants[ , , slices]
+  mask.bet <- mask.bet[ , , slices]
+  mask.malf <- mask.malf[ , , slices]
+} else if (orientation == "coronal") {
+  base.image <- base.image[ , slices, ]
+  mask.afni <- mask.afni[ , slices, ]
+  mask.ants <- mask.ants[ , slices, ]
+  mask.bet <- mask.bet[ , slices, ]
+  mask.malf <- mask.malf[ , slices, ]
+} else if (orientation == "sagittal") {
+  base.image <- base.image[slices, , ]
+  mask.afni <- mask.afni[slices, , ]
+  mask.ants <- mask.ants[slices, , ]
+  mask.bet <- mask.bet[slices, , ]
+  mask.malf <- mask.malf[slices, , ]
+}
+base.image <- slices.to.raster(base.image, 5, 4, orientation)
+
+mask.afni <- slices.to.raster(mask.afni, 5, 4, orientation)
+mask.afni <- rasterFromXYZ(mask.afni)
+poly.afni <- fortify(rasterToPolygons(mask.afni,
+                                      fun=function(x){x==1},
+                                      na.rm=TRUE, digits=1,
+                                      dissolve=TRUE))
+
+mask.ants <- slices.to.raster(mask.ants, 5, 4, orientation)
+mask.ants <- rasterFromXYZ(mask.ants)
+poly.ants <- fortify(rasterToPolygons(mask.ants,
+                                      fun=function(x){x==1},
+                                      na.rm=TRUE, digits=1,
+                                      dissolve=TRUE))
+
+mask.bet <- slices.to.raster(mask.bet, 5, 4, orientation)
+mask.bet <- rasterFromXYZ(mask.bet)
+poly.bet <- fortify(rasterToPolygons(mask.bet,
+                                      fun=function(x){x==1},
+                                      na.rm=TRUE, digits=1,
+                                      dissolve=TRUE))
+
+mask.malf <- slices.to.raster(mask.malf, 5, 4, orientation)
+mask.malf <- rasterFromXYZ(mask.malf)
+poly.malf <- fortify(rasterToPolygons(mask.malf,
+                                      fun=function(x){x==1},
+                                      na.rm=TRUE, digits=1,
+                                      dissolve=TRUE))
+
+plot.img <- ggplot(base.image, aes(x=Var1, y=Var2, fill=value)) +
+  geom_raster() +
+  coord_equal() +
+  scale_fill_gradient(low="#ffffff", high="#000000", na.value="transparent") +
+  geom_path(inherit.aes=FALSE,
+            data=poly.afni, aes(x=long, y=lat, group=group),
+            size=0.25, alpha=0.5, color="#006800", linetype="solid") +
+  geom_path(inherit.aes=FALSE,
+            data=poly.ants, aes(x=long, y=lat, group=group),
+            size=0.25, alpha=0.5, color="#a80000", linetype="solid") +
+  geom_path(inherit.aes=FALSE,
+            data=poly.bet, aes(x=long, y=lat, group=group),
+            size=0.25, alpha=0.5, color="#0000e8", linetype="solid") +
+  geom_path(inherit.aes=FALSE,
+            data=poly.malf, aes(x=long, y=lat, group=group),
+            size=0.25, alpha=0.5, color="#d800c8", linetype="solid") +
+  theme(legend.position="none",
+        legend.spacing=unit(0,"null"),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        plot.margin=unit(c(0,0,0,0), "null"),
+        plot.background=element_rect(fill = "transparent",colour = NA),
+        panel.spacing=unit(c(0,0,0,0), "null"),
+        panel.background=element_rect(fill = "transparent",colour = NA),
+        panel.grid=element_blank(),
+        panel.border=element_blank())
+plot.img
+```
+
+

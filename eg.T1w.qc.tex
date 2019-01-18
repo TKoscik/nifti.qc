@@ -1,0 +1,202 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\newcommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{}
+    \pretitle{\vspace{\droptitle}}
+  \posttitle{}
+    \author{}
+    \preauthor{}\postauthor{}
+    \date{}
+    \predate{}\postdate{}
+  
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage[table]{xcolor}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+
+\begin{document}
+
+\begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
+\textbf{Anatomical Preprocessing Report}\\
+INC, 2018-12-20 11:09:39--0600
+
+\emph{Researcher:} \textbf{/Shared/research\_lab}\\
+\emph{Project:} \textbf{project\_name}\\
+\emph{Participant:} \textbf{sub-231}\\
+\emph{Session:} \textbf{ses-328zk16wb6}
+
+ \emph{Raw Image:}
+/Shared/researchlab/project\_name/nifti/sub-231/ses-328zk16wb6/anat/sub-231\_ses-328zk16wb6\_site-00201\_acq-sagMPRAGEPROMO\_T1w.nii.gz\\
+ \emph{Processed Native:}
+/Shared/researchlab/project\_name/derivatives/anat/native/sub-231\_ses-328zk16wb6\_site-00201\_T1w.nii.gz\\
+ \emph{Processed Normalized:}
+/Shared/researchlab/project\_name/derivatives/anat/reg\_HCPMNI2009c\_800um/sub-231\_ses-328zk16wb6\_site-00201\_reg-HCPMNI2009c+800um\_T1w.nii.gz
+
+\includegraphics[width=1\linewidth]{eg.T1w.qc_files/figure-latex/Arrange QC plots-1}
+
+\includegraphics[width=1\linewidth]{eg.T1w.qc_files/figure-latex/Plot before and after-1}
+
+\includegraphics[width=1\linewidth]{eg.T1w.qc_files/figure-latex/Brain Extraction-1}
+
+\includegraphics[width=1\linewidth]{eg.T1w.qc_files/figure-latex/Normalization-1}
+
+\includegraphics[width=1\linewidth]{eg.T1w.qc_files/figure-latex/unnamed-chunk-2-1}
+
+\begin{wraptable}{l}{0pt}
+
+\caption{\label{tab:unnamed-chunk-3}Whole Brain}
+\centering
+\fontsize{10}{12}\selectfont
+\begin{tabular}[t]{l|r|r}
+\hline
+Metric & Raw.Value & Clean.Value\\
+\hline
+SNR & 3.134 & 3.081\\
+\hline
+SNR.D & 2.851 & 3.388\\
+\hline
+CNR & 1.112 & 1.504\\
+\hline
+QI.1 & 2.036 & NA\\
+\hline
+QI.2 & Inf & NA\\
+\hline
+CJV & 0.778 & 0.563\\
+\hline
+FWHM.average & 3.379 & 4.099\\
+\hline
+FWHM.x & 3.565 & 4.197\\
+\hline
+FWHM.y & 3.283 & 4.066\\
+\hline
+FWHM.z & 3.290 & 4.033\\
+\hline
+EFC & -0.517 & -0.525\\
+\hline
+FBER & 26185.627 & 47641.983\\
+\hline
+WM.to.MAX & 0.766 & 0.820\\
+\hline
+\end{tabular}
+\end{wraptable}
+
+\begin{table}
+
+\caption{\label{tab:unnamed-chunk-3}by Tissue Class}
+\centering
+\fontsize{10}{12}\selectfont
+\begin{tabular}[t]{l|r|r|r}
+\hline
+Metric & CSF & GM & WM\\
+\hline
+Ratio.to.Whole.Brain & 0.287 & 0.531 & 0.469\\
+\hline
+rPVe & 0.192 & 0.356 & 0.320\\
+\hline
+SNR & 3.248 & 9.302 & 13.281\\
+\hline
+SNR.D & 1.762 & 3.278 & 4.507\\
+\hline
+Mean & 361.105 & 671.686 & 923.643\\
+\hline
+SD & 111.171 & 72.206 & 69.545\\
+\hline
+Median & 360.626 & 675.917 & 929.167\\
+\hline
+MAD & 134.311 & 77.297 & 75.647\\
+\hline
+Skewness & 0.156 & -0.231 & -0.050\\
+\hline
+Kurtosis & 2.357 & 2.491 & 2.357\\
+\hline
+quantile.05 & 192.006 & 543.252 & 806.557\\
+\hline
+quantile.95 & 532.167 & 780.598 & 1032.705\\
+\hline
+\end{tabular}
+\end{table}
+
+
+\end{document}

@@ -1,0 +1,1000 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+rm(list=ls())
+gc()
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=FALSE)
+
+# Debug inputs ----
+researcher <- "/Shared/nopoulos"
+project <- "sca_pilot"
+subject <- "sub-231"
+session <- "ses-328zk16wb6"
+site <- "site-00201"
+space <- "HCPMNI2009c"
+template <- "800um"
+img.source <- "acq-sagMPRAGEPROMO_T1w"
+scratch.dir <- "/Shared/koscikt_scratch/nifti_qc_scratch"
+nimg.root <- "/Shared/nopoulos/nimg_core"
+norms <- "pcp"
+# ----
+
+img.mod <- unlist(strsplit(img.source, "_"))
+img.mod <- img.mod[length(img.mod)]
+
+```
+
+```{r}
+library(nifti.qc)
+library(nifti.io)
+library(nifti.draw)
+library(R.utils)
+library(ggplot2)
+library(viridis)
+library(reshape2)
+library(gridExtra)
+library(grid)
+library(raster)
+library(moments)
+library(OpenImageR)
+library(kableExtra)
+```
+
+****
+__Anatomical Preprocessing Report__  
+INC, `r format(Sys.time(), "%Y-%m-%d %H:%M:%S-%z")`
+
+_Researcher:_ __/Shared/research_lab__  
+_Project:_ __project_name__  
+_Participant:_ __sub-231__  
+_Session:_ __ses-328zk16wb6__  
+
+<font size="1"> _Raw Image:_ /Shared/researchlab/project_name/nifti/sub-231/ses-328zk16wb6/anat/sub-231_ses-328zk16wb6_site-00201_acq-sagMPRAGEPROMO_T1w.nii.gz</font>  
+<font size="1"> _Processed Native:_ /Shared/researchlab/project_name/derivatives/anat/native/sub-231_ses-328zk16wb6_site-00201_T1w.nii.gz</font>  
+<font size="1"> _Processed Normalized:_ /Shared/researchlab/project_name/derivatives/anat/reg_HCPMNI2009c_800um/sub-231_ses-328zk16wb6_site-00201_reg-HCPMNI2009c+800um_T1w.nii.gz</font>  
+
+```{r Gather Images}
+# gather needed images
+source.file <- paste0(researcher, "/", project, "/nifti/", subject, "/", session, "/anat/", subject, "_", session, "_", site, "_", img.source, ".nii.gz")
+img.rigid <- paste0(scratch.dir, "/", subject, "_", session, "_rigid.nii")
+img.native <- paste0(scratch.dir, "/", subject, "_", session, "_native.nii")
+img.template <- paste0(scratch.dir, "/template.nii")
+mask.air <- paste0(scratch.dir, "/", subject, "_", session, "_mask-air.nii")
+mask.brain <- paste0(scratch.dir, "/", subject, "_", session, "_mask-brain.nii")
+mask.brain.reg <- paste0(scratch.dir, "/", subject, "_", session, "_mask-brain-reg.nii")
+seg.label <- paste0(scratch.dir, "/", subject, "_", session, "_seg-label.nii")
+prob.csf <- paste0(scratch.dir, "/", subject, "_", session, "_seg-CSF.nii")
+prob.gm <- paste0(scratch.dir, "/", subject, "_", session, "_seg-GM.nii")
+prob.wm <- paste0(scratch.dir, "/", subject, "_", session, "_seg-WM.nii")
+img.noise <- paste0(scratch.dir, "/", subject, "_", session, "_noise.nii")
+img.biast1t2 <- paste0(scratch.dir, "/", subject, "_", session, "_biasFieldT1T2.nii")
+img.biasn4 <- paste0(scratch.dir, "/", subject, "_", session, "_biasFieldN4.nii")
+img.art.rigid <- paste0(scratch.dir, "/", subject, "_", session, "_artRigid.nii")
+img.art.native <- paste0(scratch.dir, "/", subject, "_", session, "_artNative.nii")
+```
+
+```{r unzip files}
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/prep/", subject, "/", session, "/", subject, "_", session, "_", site, "_", img.source, "_prep-rigid.nii.gz"), destname=img.rigid, remove=FALSE, overwrite=TRUE)
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/native/", subject, "_", session, "_", site, "_", img.mod, ".nii.gz"), destname=img.native, remove=FALSE, overwrite=TRUE)
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/mask/", subject, "_", session, "_", site, "_mask-air.nii.gz"), destname=mask.air, remove=FALSE, overwrite=TRUE)
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/mask/", subject, "_", session, "_", site, "_mask-brain.nii.gz"), destname=mask.brain, remove=FALSE, overwrite=TRUE)
+
+
+gunzip(filename=paste0(nimg.root, "/templates/", space, "/", template, "/", space, "_", template, "_", img.mod, ".nii.gz"), destname=img.template, remove=FALSE, overwrite=TRUE)
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/reg_", space, "_", template, "/", subject, "_", session, "_", site, "_reg-", space, "+", template, "_T1w_brain.nii.gz"), destname=mask.brain.reg, remove=FALSE, overwrite=TRUE)
+
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/segmentation/", subject, "_", session, "_", site, "_seg-label.nii.gz"), destname=seg.label, remove=FALSE, overwrite=TRUE)
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/segmentation/", subject, "_", session, "_", site, "_seg-CSF.nii.gz"), destname=prob.csf, remove=FALSE, overwrite=TRUE)
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/segmentation/", subject, "_", session, "_", site, "_seg-GM.nii.gz"), destname=prob.gm, remove=FALSE, overwrite=TRUE)
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/segmentation/", subject, "_", session, "_", site, "_seg-WM.nii.gz"), destname=prob.wm, remove=FALSE, overwrite=TRUE)
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/prep/", subject, "/", session, "/", subject, "_", session, "_", site, "_", img.source, "_prep-noise.nii.gz"), destname=img.noise, remove=FALSE, overwrite=TRUE)
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/prep/", subject, "/", session, "/", subject, "_", session, "_", site, "_prep-biasFieldT1T2.nii.gz"), destname=img.biast1t2, remove=FALSE, overwrite=TRUE)
+gunzip(filename=paste0(researcher, "/", project, "/derivatives/anat/prep/", subject, "/", session, "/", subject, "_", session, "_", site, "_", img.mod, "_prep-biasFieldN4.nii.gz"), destname=img.biasn4, remove=FALSE, overwrite=TRUE)
+```
+
+```{r WholeBrain QC}
+wbf <- data.frame(
+  Metric = c("SNR", "SNR.D", "CNR", "QI.1", "QI.2", "CJV",
+             "FWHM.average", "FWHM.x", "FWHM.y", "FWHM.z",
+             "EFC", "FBER", "WM.to.MAX"),
+  Raw.Value=numeric(13),
+  Clean.Value=numeric(13))
+var.num <- 0
+
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- nii.qc.snr(
+  img.nii=img.rigid, img.vol=1,
+  mask.nii=mask.brain, mask.vol=1, mask.dir="gt", mask.thresh=0)
+wbf$Clean.Value[var.num] <- nii.qc.snr(
+  img.nii=img.native, img.vol=1,
+  mask.nii=mask.brain, mask.vol=1, mask.dir="gt", mask.thresh=0)
+
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- nii.qc.snrd(
+  img.nii=img.rigid, img.vol=1,
+  mask.nii=mask.brain, mask.vol=1, mask.dir="gt", mask.thresh=0,
+  air.nii=mask.air, air.vol=1, air.dir="eq", air.thresh=1)
+wbf$Clean.Value[var.num] <- nii.qc.snrd(
+  img.nii=img.native, img.vol=1,
+  mask.nii=mask.brain, mask.vol=1, mask.dir="gt", mask.thresh=0,
+  air.nii=mask.air, air.vol=1, air.dir="eq", air.thresh=1)
+
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- nii.qc.cnr(img.nii=img.rigid, img.vol=1,
+  gm.nii=seg.label, gm.vol=1, gm.dir="eq", gm.thresh=2,
+  wm.nii=seg.label, wm.vol=1, wm.dir="eq", wm.thresh=3,
+  air.nii=mask.air, air.vol=1, air.dir="eq", air.thresh=1)
+wbf$Clean.Value[var.num] <- nii.qc.cnr(img.nii=img.native, img.vol=1,
+  gm.nii=seg.label, gm.vol=1, gm.dir="eq", gm.thresh=2,
+  wm.nii=seg.label, wm.vol=1, wm.dir="eq", wm.thresh=3,
+  air.nii=mask.air, air.vol=1, air.dir="eq", air.thresh=1)
+
+invisible(nii.qc.artefacts(
+  img.nii=img.rigid, img.vol=1L,
+  air.nii=mask.air, air.vol=1L, air.dir="eq", air.thresh=1,
+  save.dir=scratch.dir, file.name=paste0(subject, "_", session, "_artRigid.nii")))
+qi <- nii.qc.mortamet(
+  img.nii=img.rigid, img.vol=1L,
+  air.nii=mask.air, air.vol=1L, air.dir="eq", air.thresh=1,
+  art.nii=img.art.rigid, art.vol=1L, art.dir="eq", art.thresh=1)
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- qi$qi1
+wbf$Clean.Value[var.num] <- NA
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- qi$qi2
+wbf$Clean.Value[var.num] <- NA
+
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- nii.qc.cjv(
+  img.nii=img.rigid, img.vol=1L,
+  gm.nii=seg.label, gm.vol=1L, gm.dir="eq", gm.thresh=2,
+  wm.nii=seg.label, wm.vol=1L, wm.dir="eq", wm.thresh=3)
+wbf$Clean.Value[var.num] <- nii.qc.cjv(
+  img.nii=img.native, img.vol=1L,
+  gm.nii=seg.label, gm.vol=1L, gm.dir="eq", gm.thresh=2,
+  wm.nii=seg.label, wm.vol=1L, wm.dir="eq", wm.thresh=3)
+
+fwhm.rigid <- nii.qc.fwhm(img.nii=img.rigid, mask.nii=mask.brain, save.dir=scratch.dir, file.name="rigid.fwhm.txt")
+fwhm.native <- nii.qc.fwhm(img.nii=img.native, mask.nii=mask.brain, save.dir=scratch.dir, file.name="native.fwhm.txt")
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- fwhm.rigid$average
+wbf$Clean.Value[var.num] <- fwhm.native$average
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- fwhm.rigid$x
+wbf$Clean.Value[var.num] <- fwhm.native$x
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- fwhm.rigid$y
+wbf$Clean.Value[var.num] <- fwhm.native$y
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- fwhm.rigid$z
+wbf$Clean.Value[var.num] <- fwhm.native$z
+
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- nii.qc.efc(img.nii=img.rigid, img.vol=1L)
+wbf$Clean.Value[var.num] <- nii.qc.efc(img.nii=img.native, img.vol=1L)
+
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- nii.qc.fber(img.nii=img.rigid, img.vol=1L, brain.mask=mask.brain, brain.vol=1L, brain.dir="gt", brain.thresh = 0)
+wbf$Clean.Value[var.num] <- nii.qc.fber(img.nii=img.native, img.vol=1L, brain.mask=mask.brain, brain.vol=1L, brain.dir="gt", brain.thresh = 0)
+
+var.num <- var.num + 1
+wbf$Raw.Value[var.num] <- nii.qc.wm2max (img.nii=img.rigid, img.vol=1L, wm.nii=seg.label, wm.vol=1L, wm.dir="eq", wm.thresh=3)
+wbf$Clean.Value[var.num] <- nii.qc.wm2max (img.nii=img.native, img.vol=1L, wm.nii=seg.label, wm.vol=1L, wm.dir="eq", wm.thresh=3)
+```
+
+```{r TissueClass QC}
+segf <- data.frame(
+  Metric = c("Ratio.to.Whole.Brain", "rPVe", "SNR", "SNR.D",
+             "Mean", "SD", "Median", "MAD", "Skewness", "Kurtosis",
+             "quantile.05", "quantile.95"),
+  CSF=numeric(12),
+  GM=numeric(12),
+  WM=numeric(12))
+
+segf$CSF[1] <- nii.qc.volfrac(
+  whole.nii=seg.label, whole.vol=1L, whole.dir="gt", whole.thresh=1,
+  part.nii=seg.label, part.vol=1L, part.dir="eq", part.thresh=1)
+segf$GM[1] <- nii.qc.volfrac(
+  whole.nii=seg.label, whole.vol=1L, whole.dir="gt", whole.thresh=1,
+  part.nii=seg.label, part.vol=1L, part.dir="eq", part.thresh=2)
+segf$WM[1] <- nii.qc.volfrac(
+  whole.nii=seg.label, whole.vol=1L, whole.dir="gt", whole.thresh=1,
+  part.nii=seg.label, part.vol=1L, part.dir="eq", part.thresh=3)
+
+segf$CSF[2] <- nii.qc.rpve(tissue.prob=prob.csf, tissue.vol=1L)
+segf$GM[2] <- nii.qc.rpve(tissue.prob=prob.gm, tissue.vol=1L)
+segf$WM[2] <- nii.qc.rpve(tissue.prob=prob.wm, tissue.vol=1L)
+
+segf$CSF[3] <- nii.qc.snr(img.nii=img.native, img.vol=1L, mask.nii=seg.label, mask.vol=1L, mask.dir="eq", mask.thresh=1)
+segf$GM[3] <- nii.qc.snr(img.nii=img.native, img.vol=1L, mask.nii=seg.label, mask.vol=1L, mask.dir="eq", mask.thresh=2)
+segf$WM[3] <- nii.qc.snr(img.nii=img.native, img.vol=1L, mask.nii=seg.label, mask.vol=1L, mask.dir="eq", mask.thresh=3)
+
+segf$CSF[4] <- nii.qc.snrd(img.nii=img.native, img.vol=1L, mask.nii=seg.label, mask.vol=1L, mask.dir="eq", mask.thresh=1, air.nii=mask.air, air.vol=1L, air.dir="eq", air.thresh=1)
+segf$GM[4] <- nii.qc.snrd(img.nii=img.native, img.vol=1L, mask.nii=seg.label, mask.vol=1L, mask.dir="eq", mask.thresh=2, air.nii=mask.air, air.vol=1L, air.dir="eq", air.thresh=1)
+segf$WM[4] <- nii.qc.snrd(img.nii=img.native, img.vol=1L, mask.nii=seg.label, mask.vol=1L, mask.dir="eq", mask.thresh=3, air.nii=mask.air, air.vol=1L, air.dir="eq", air.thresh=1)
+
+segf$CSF[5:12] <- as.numeric(nii.qc.descriptive(img.nii=img.native, img.vol=1L, mask.nii=seg.label, mask.vol=1L, mask.dir="eq", mask.thresh=1)$stats)
+segf$GM[5:12] <- as.numeric(nii.qc.descriptive(img.nii=img.native, img.vol=1L, mask.nii=seg.label, mask.vol=1L, mask.dir="eq", mask.thresh=2)$stats)
+segf$WM[5:12] <- as.numeric(nii.qc.descriptive(img.nii=img.native, img.vol=1L, mask.nii=seg.label, mask.vol=1L, mask.dir="eq", mask.thresh=3)$stats)
+```
+
+```{r WB plot}
+inc.norms.wb <- read.csv(paste0(nimg.root, "/qc_norms/inc_anat_wb.csv"), as.is=TRUE)
+if (source.file %in% inc.norms.wb$input.image) {
+  inc.norms.wb[which(source.file == inc.norms.wb$input.image)[1], 3:15] <- as.matrix(t(wbf)[2,])
+  inc.norms.wb[which(source.file == inc.norms.wb$input.image)[2], 3:15] <- as.matrix(t(wbf)[3,])
+} else {
+  tf <- data.frame(input.image = rep(source.file, 2),
+                   Value = c("Raw", "Clean"),
+                   SNR=as.numeric(wbf[1,2:3]),
+                   SNR.D=as.numeric(wbf[2,2:3]),
+                   CNR=as.numeric(wbf[3,2:3]),
+                   QI.1=as.numeric(wbf[4,2:3]),
+                   QI.2=as.numeric(wbf[5,2:3]),
+                   CJV=as.numeric(wbf[6,2:3]),
+                   FWHM.average=as.numeric(wbf[7,2:3]),
+                   FWHM.x=as.numeric(wbf[8,2:3]),
+                   FWHM.y=as.numeric(wbf[9,2:3]),
+                   FWHM.z=as.numeric(wbf[10,2:3]),
+                   EFC=as.numeric(wbf[11,2:3]),
+                   FBER=as.numeric(wbf[12,2:3]),
+                   WM.to.MAX=as.numeric(wbf[13,2:3]))
+  inc.norms.wb <- rbind(inc.norms.wb, tf)
+}
+write.table(x=inc.norms.wb, file=paste0(nimg.root, "/qc_norms/inc_anat_wb.csv"),
+            row.names = FALSE, col.names=TRUE, quote = FALSE, sep = ",")
+
+norm.vals <- read.csv(paste0(nimg.root, "/qc_norms/inc_anat_wb.csv"), as.is=TRUE)
+
+plotf <- wbf
+colnames(plotf) <- c("Metric", "Raw", "Clean")
+plotf <- melt(plotf, id.vars="Metric")
+plotf$lower <- numeric(nrow(plotf))*NA
+plotf$upper <- numeric(nrow(plotf))*NA
+plotf$norm <- numeric(nrow(plotf))
+for (i in 1:nrow(plotf)) {
+  if (!is.na(plotf$value[i])) {
+  norm.m <- mean(norm.vals[(norm.vals$Value==plotf$variable[i]), which(colnames(norm.vals)==plotf$Metric[i])])
+  norm.sd <- sd(norm.vals[(norm.vals$Value==plotf$variable[i]), which(colnames(norm.vals)==plotf$Metric[i])])
+  iqr <- IQR(norm.vals[(norm.vals$Value==plotf$variable[i]), which(colnames(norm.vals)==plotf$Metric[i])])
+  plotf$value[i] <- (plotf$value[i] - norm.m) /norm.sd
+  plotf$lower[i] <- (-iqr) / norm.sd
+  plotf$upper[i] <- (iqr) / norm.sd
+  }
+}
+
+plotf$ok <- factor(((plotf$value > plotf$lower) & (plotf$value < plotf$upper))*1, levels=c(0,1,NA), labels=c("Check", "OK"))
+plotf$Metric <- factor(plotf$Metric, levels=c("WM.to.MAX", "FBER", "EFC", "FWHM.z", "FWHM.y", "FWHM.x", "FWHM.average", "CJV", "QI.2", "QI.1", "CNR", "SNR.D", "SNR"))
+
+if (!("Check" %in% plotf$ok)) {
+  ok.colors <- "#64a8ff"
+} else if (!("OK" %in% plotf$ok)) {
+  ok.colors <- "#ff0000"
+} else {
+  ok.colors <- c("#ff0000", "#64a8ff")
+}
+
+plot1 <- ggplot(plotf, aes(x=Metric)) +
+  theme_bw() +
+  geom_pointrange(aes(y=norm, ymin=lower, ymax=upper, group=variable, color=variable),
+                  position=position_dodge(width=0.3), shape=124, size=1,
+                  show.legend = FALSE) +
+  scale_shape_manual(values=c(21,23)) +
+  scale_color_manual(values=c("#a8a8a8", "#000000"), guide="none") +
+  scale_fill_manual(values=ok.colors, guide="none") +
+  geom_point(aes(y=value, shape=variable, group=variable, fill=ok),
+             size=2, position=position_dodge(width=0.3)) +
+  coord_flip() +
+  labs(subtitle="Whole Brain", x="", y="Z-Score") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.background = element_blank(),
+        legend.text = element_text(size=8),
+        plot.title = element_blank(),
+        plot.subtitle = element_text(size=10),
+        axis.title = element_text(size=10),
+        axis.text.x = element_text(size=8),
+        axis.text.y = element_text(size=8),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.margin = margin(0,0,0,0, "null"))
+```
+
+```{r Seg plot}
+inc.norms.seg <- read.csv(paste0(nimg.root, "/qc_norms/inc_anat_seg.csv"), as.is=TRUE)
+if (source.file %in% inc.norms.seg$input.image) {
+  inc.norms.seg[which(source.file == inc.norms.seg$input.image)[1], 3:14] <- as.matrix(t(segf)[2,])
+  inc.norms.seg[which(source.file == inc.norms.seg$input.image)[2], 3:14] <- as.matrix(t(segf)[3,])
+  inc.norms.seg[which(source.file == inc.norms.seg$input.image)[3], 3:14] <- as.matrix(t(segf)[4,])
+} else {
+  tf <- data.frame(input.image = rep(source.file, 3),
+                   Tissue = c("CSF", "GM", "WM"),
+                   Ratio.to.Whole.Brain = as.numeric(segf[1, 2:4]),
+                   rPVe = as.numeric(segf[2, 2:4]),
+                   SNR = as.numeric(segf[3, 2:4]),
+                   SNR.d = as.numeric(segf[4, 2:4]),
+                   Mean = as.numeric(segf[5, 2:4]),
+                   SD = as.numeric(segf[6, 2:4]),
+                   Median = as.numeric(segf[7, 2:4]),
+                   MAD = as.numeric(segf[8, 2:4]),
+                   Skewness = as.numeric(segf[9, 2:4]),
+                   Kurtosis = as.numeric(segf[10, 2:4]),
+                   quantile.05 = as.numeric(segf[11, 2:4]),
+                   quantile.95 = as.numeric(segf[12, 2:4]))
+  inc.norms.seg <- rbind(inc.norms.seg, tf)
+}
+write.table(x=inc.norms.seg, file=paste0(nimg.root, "/qc_norms/inc_anat_seg.csv"),
+            row.names = FALSE, col.names=TRUE, quote = FALSE, sep = ",")
+
+norm.vals <- read.csv(paste0(nimg.root, "/qc_norms/inc_anat_seg.csv"), as.is=TRUE)
+
+plotf <- segf
+plotf <- melt(plotf, id.vars="Metric")
+plotf$lower <- numeric(nrow(plotf))*NA
+plotf$upper <- numeric(nrow(plotf))*NA
+plotf$norm <- numeric(nrow(plotf))
+for (i in 1:nrow(plotf)) {
+  if (!is.na(plotf$value[i])) {
+  norm.m <- mean(norm.vals[(norm.vals$Tissue==plotf$variable[i]), which(colnames(norm.vals)==plotf$Metric[i])])
+  norm.sd <- sd(norm.vals[(norm.vals$Tissue==plotf$variable[i]), which(colnames(norm.vals)==plotf$Metric[i])])
+  iqr <- IQR(norm.vals[(norm.vals$Tissue==plotf$variable[i]), which(colnames(norm.vals)==plotf$Metric[i])])
+  plotf$value[i] <- (plotf$value[i] - norm.m) /norm.sd
+  plotf$lower[i] <- (-iqr) / norm.sd
+  plotf$upper[i] <- (iqr) / norm.sd
+  }
+}
+
+plotf$ok <- factor(((plotf$value > plotf$lower) & (plotf$value < plotf$upper))*1, levels=c(0,1, NA), labels=c("Check", "OK"))
+plotf$Metric <- factor(plotf$Metric, levels=c("quantile.95", "quantile.05", "Kurtosis", "Skewness", "MAD", "Median", "SD", "Mean", "rPVe", "Ratio.to.Whole.Brain", "SNR.D", "SNR"))
+
+if (!("Check" %in% plotf$ok)) {
+  ok.colors <- "#64a8ff"
+} else if (!("OK" %in% plotf$ok)) {
+  ok.colors <- "#ff0000"
+} else {
+  ok.colors <- c("#ff0000", "#64a8ff")
+}
+
+plot2 <- ggplot(plotf, aes(x=Metric)) +
+  theme_bw() +
+  geom_pointrange(aes(y=norm, ymin=lower, ymax=upper, group=variable, color=variable),
+                  position=position_dodge(width=0.3), shape=124, size=1,
+                  show.legend = FALSE) +
+  scale_shape_manual(values=c(21,23,22)) +
+  scale_color_manual(values=c("#000000", "#646464", "#a8a8a8"), guide="none") +
+  scale_fill_manual(values=ok.colors, guide="none") +
+  coord_flip() +
+  geom_point(aes(y=value, shape=variable, group=variable, fill=ok),
+             size=2, position=position_dodge(width=0.3)) +
+  labs(subtitle="by Tissue Class", x="", y="Z-Score") +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.background = element_blank(),
+        legend.text = element_text(size=8),
+        plot.title = element_blank(),
+        plot.subtitle = element_text(size=10),
+        axis.title = element_text(size=10),
+        axis.text.x = element_text(size=8),
+        axis.text.y = element_text(size=8),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.margin = margin(0,0,0,0, "null"))
+```
+
+```{r Arrange QC plots, out.width="100%", fig.retina=NULL}
+grid.arrange(textGrob("Quality Metrics", rot = 90),  plot1, plot2, ncol=, widths=c(0.1,1,1))
+```
+
+```{r Raw Image, fig.height=2.85, fig.width=6.5, fig.retina=NULL}
+volume <- read.nii.volume(img.rigid, 1L)
+coords <- c(round(dim(volume)[1]/5*2), round(dim(volume)[2:3]/2))
+slice1 <- volume[coords[1], , ]
+slice2 <- volume[ , coords[2], ]
+slice3 <- volume[ , , coords[3]]
+pixdims <- unlist(nii.hdr(img.rigid, "pixdim"))[2:4]
+slice1 <- resizeImage(slice1, width=dim(slice1)[1]*pixdims[2], height=dim(slice1)[2]*pixdims[3])
+slice2 <- resizeImage(slice2, width=dim(slice2)[1]*pixdims[1], height=dim(slice2)[2]*pixdims[3])
+slice3 <- resizeImage(slice3, width=dim(slice3)[1]*pixdims[1], height=dim(slice3)[2]*pixdims[2])
+slices <- rbind(slice1, slice2, slice3)
+slices <- melt(slices)
+
+# plot1 <- 
+  ggplot(slices, aes(x=Var1, y=Var2, fill=value)) +
+  theme_bw() +
+  coord_equal(expand=FALSE, clip="off") +
+  scale_fill_gradient(low="#000000", high="#ffffff") +
+  geom_raster() +
+  annotate("label", x=-Inf, y=Inf, label="Unprocessed",
+           hjust=0, vjust=1, color="#000000", fill="#ffffff",
+           label.r=unit(0, "null")) +
+  theme(plot.title = element_blank(),
+        legend.position="none",
+        legend.title = element_blank(),
+        legend.text = element_text(size=8, margin=margin(1,0,0,0,"null")),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        plot.subtitle = element_text(size=10, margin = margin(0,0,0,0,"null")),
+        plot.background=element_blank(),
+        panel.background=element_rect(color="#000000"),
+        panel.grid=element_blank(),
+        panel.border=element_blank(),
+        panel.spacing.x=unit(c(0,0,0,0),"null"),
+        panel.spacing.y=unit(c(0,0,0,0),"null"),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.margin=margin(0,0,0,0, "null"),
+        panel.spacing = margin(0,0,0,0, "null"))
+rm(list=c("volume", "coords", "slice1", "slice2", "slice3", "slices", "pixdims"))
+```
+
+```{r Clean Image, fig.height=2.85, fig.width=6.5, fig.retina=NULL}
+volume <- read.nii.volume(img.native, 1L)
+coords <- c(round(dim(volume)[1]/5*2), round(dim(volume)[2:3]/2))
+slice1 <- volume[coords[1], , ]
+slice2 <- volume[ , coords[2], ]
+slice3 <- volume[ , , coords[3]]
+pixdims <- unlist(nii.hdr(img.rigid, "pixdim"))[2:4]
+slice1 <- resizeImage(slice1, width=dim(slice1)[1]*pixdims[2], height=dim(slice1)[2]*pixdims[3])
+slice2 <- resizeImage(slice2, width=dim(slice2)[1]*pixdims[1], height=dim(slice2)[2]*pixdims[3])
+slice3 <- resizeImage(slice3, width=dim(slice3)[1]*pixdims[1], height=dim(slice3)[2]*pixdims[2])
+slices <- rbind(slice1, slice2, slice3)
+slices <- melt(slices)
+
+# plot2 <- 
+  ggplot(slices, aes(x=Var1, y=Var2, fill=value)) +
+  theme_bw() +
+  coord_equal(expand=FALSE, clip="off") +
+  scale_fill_gradient(low="#000000", high="#ffffff") +
+  geom_raster() +
+  annotate("label", x=-Inf, y=Inf, label="Cleaned",
+           hjust=0, vjust=1, color="#000000", fill="#ffffff",
+           label.r=unit(0, "null")) +
+  theme(plot.title = element_blank(),
+        legend.position="none",
+        legend.title = element_blank(),
+        legend.text = element_blank(),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        plot.background=element_blank(),
+        panel.background=element_blank(),
+        panel.grid=element_blank(),
+        panel.border=element_blank(),
+        panel.spacing.x=unit(c(0,0,0,0),"null"),
+        panel.spacing.y=unit(c(0,0,0,0),"null"),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.margin=margin(0,0,0,0, "null"),
+        panel.spacing = margin(0,0,0,0, "null"))
+rm(list=c("volume", "coords", "slice1", "slice2", "slice3", "slices", "pixdims"))
+```
+
+<P style="page-break-before: always">
+
+```{r Plot before and after, out.height='100%', fig.retina=NULL, eval=FALSE}
+grid.arrange(plot1, plot2, ncol=1)
+rm(list=c("plot1", "plot2"))
+```
+
+<P style="page-break-before: always">
+
+```{r Brain Extraction, fig.height=8, fig.width=6.5, fig.retina=NULL}
+img.brain <- read.nii.volume(img.native, 1)
+img.mask <- read.nii.volume(mask.brain, 1)
+n.row=5
+n.col=4
+which.slices <- numeric()
+for (i in 1:dim(img.brain)[1]) {
+  slice = img.mask[i, , ]
+  if (sum(slice) != 0) {
+    which.slices <- c(which.slices, i)
+  }
+}
+n.slices <- prod(n.row, n.col)
+if (length(which.slices) < n.slices) {
+  calc.row <- floor(n.slices / n.col)
+  if (calc.row < 1) {
+    n.row <- 1
+    n.col <- n.slices
+  } else {
+    n.row <- calc.row
+    n.slices <- prod(n.row, n.col)
+  }
+}
+slices <- which.slices[seq(0,length(which.slices)+1,length.out=n.slices+2)[-c(1,n.slices+2)]]
+
+imgdims <- dim(img.brain)
+pixdims <- unlist(nii.hdr(img.native, "pixdim"))[2:4]
+base.size <- 1
+
+slice.count <- 0
+brain.raster <- numeric()
+mask.raster <- numeric()
+for (i in 1:n.row) {
+  brain.temp <- numeric()
+  mask.temp <- numeric()
+  for (j in 1:n.col) {
+    slice.count <- slice.count + 1
+    brain.temp <- rbind(brain.temp, resizeImage(img.brain[slices[slice.count], , ],
+                                               width=imgdims[2]/(base.size/pixdims[2]),
+                                               height=imgdims[3]/(base.size/pixdims[3])))
+    mask.temp <- rbind(mask.temp, resizeImage(img.mask[slices[slice.count], , ],
+                                               width=imgdims[2]/(base.size/pixdims[2]),
+                                               height=imgdims[3]/(base.size/pixdims[3])))
+  }
+  brain.raster <- cbind(brain.temp, brain.raster)
+  mask.raster <- cbind(mask.temp, mask.raster)
+}
+brain.raster <- melt(brain.raster)
+mask.raster <- melt(mask.raster)
+mask.raster <- rasterFromXYZ(mask.raster)
+mask.poly <- fortify(rasterToPolygons(mask.raster, fun=function(x){x != 0}, na.rm=TRUE, digits=1, dissolve=TRUE))
+rm(list=c("img.brain", "img.mask"))
+
+ggplot(brain.raster, aes(x=Var1, y=Var2, fill=value)) +
+  geom_raster() +
+  coord_equal(expand=FALSE, clip="off") +
+  scale_fill_gradient(low="#ffffff", high="#000000", na.value="transparent") +
+  geom_path(inherit.aes=FALSE,
+            data=mask.poly, aes(x=long, y=lat, group=group),
+            size=0.25, alpha=0.5, color="#ff0000", linetype="solid") +
+  annotate("label", x=-Inf, y=Inf, label="Brain Extraction",
+           color="#000000", fill="#ffffff",
+           hjust=0, vjust=1, label.r=unit(0, "null")) +
+  theme(plot.title = element_blank(),
+        plot.background=element_blank(),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.position="none",
+        legend.title = element_blank(),
+        legend.text = element_blank(),
+        legend.margin=margin(0,0,0,0, "null"),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        panel.background=element_blank(),
+        panel.grid=element_blank(),
+        panel.border=element_blank(),
+        panel.spacing.x=unit(c(0,0,0,0),"null"),
+        panel.spacing.y=unit(c(0,0,0,0),"null"),
+        panel.spacing=margin(0,0,0,0, "null"))
+```
+
+<P style="page-break-before: always">
+
+```{r Normalization, fig.height=8, fig.width=6.5, fig.retina=NULL}
+img.brain <- read.nii.volume(img.template, 1)
+img.mask <- read.nii.volume(mask.brain.reg, 1)
+n.row=5
+n.col=4
+which.slices <- numeric()
+for (i in 1:dim(img.brain)[3]) {
+  slice = img.mask[ , ,i]
+  if (sum(slice) != 0) {
+    which.slices <- c(which.slices, i)
+  }
+}
+n.slices <- prod(n.row, n.col)
+if (length(which.slices) < n.slices) {
+  calc.row <- floor(n.slices / n.col)
+  if (calc.row < 1) {
+    n.row <- 1
+    n.col <- n.slices
+  } else {
+    n.row <- calc.row
+    n.slices <- prod(n.row, n.col)
+  }
+}
+slices <- which.slices[seq(0,length(which.slices)+1,length.out=n.slices+2)[-c(1,n.slices+2)]]
+
+imgdims <- dim(img.brain)
+pixdims <- unlist(nii.hdr(img.native, "pixdim"))[2:4]
+base.size <- 1
+
+slice.count <- 0
+brain.raster <- numeric()
+mask.raster <- numeric()
+for (i in 1:n.row) {
+  brain.temp <- numeric()
+  mask.temp <- numeric()
+  for (j in 1:n.col) {
+    slice.count <- slice.count + 1
+    brain.temp<- rbind(brain.temp, resizeImage(img.brain[ , , slices[slice.count]],
+                                               width=imgdims[2]/(base.size/pixdims[2]),
+                                               height=imgdims[1]/(base.size/pixdims[1])))
+    mask.temp<- rbind(mask.temp, resizeImage(img.mask[, , slices[slice.count]],
+                                               width=imgdims[2]/(base.size/pixdims[2]),
+                                               height=imgdims[1]/(base.size/pixdims[1])))
+  }
+  brain.raster <- cbind(brain.temp, brain.raster)
+  mask.raster <- cbind(mask.temp, mask.raster)
+}
+brain.raster <- melt(brain.raster)
+
+mask.m <- mean(as.numeric(mask.raster[mask.raster != 0]))
+mask.sd <- sd(as.numeric(mask.raster[mask.raster != 0]))
+mask.raster[mask.raster < (mask.m - mask.sd/2)] <- 0
+mask.raster[mask.raster > (mask.m + mask.sd/2)] <- 0
+mask.raster[mask.raster != 0] <- 1
+mask.raster <- melt(mask.raster)
+mask.raster <- rasterFromXYZ(mask.raster)
+mask.poly <- fortify(rasterToPolygons(mask.raster, fun=function(x){x != 0}, na.rm=TRUE, digits=1, dissolve=TRUE))
+rm(list=c("img.brain", "img.mask"))
+
+ggplot(brain.raster, aes(x=Var1, y=Var2, fill=value)) +
+  geom_raster() +
+  coord_equal(expand=FALSE, clip="off") +
+  scale_fill_gradient(low="#ffffff", high="#000000", na.value="transparent") +
+  geom_path(inherit.aes=FALSE,
+            data=mask.poly, aes(x=long, y=lat, group=group),
+            size=0.25, alpha=0.5, color="#00ff00", linetype="solid") +
+  annotate("label", x=-Inf, y=Inf, label="Normalization",
+           color="#000000", fill="#ffffff",
+           hjust=0, vjust=1, label.r=unit(0, "null")) +
+  theme(plot.title = element_blank(),
+        plot.background=element_blank(),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.position="none",
+        legend.title = element_blank(),
+        legend.text = element_blank(),
+        legend.margin=margin(0,0,0,0, "null"),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        panel.background=element_blank(),
+        panel.grid=element_blank(),
+        panel.border=element_blank(),
+        panel.spacing.x=unit(c(0,0,0,0),"null"),
+        panel.spacing.y=unit(c(0,0,0,0),"null"),
+        panel.spacing=margin(0,0,0,0, "null"))
+```
+
+<P style="page-break-before: always">
+
+```{r Noise, fig.height=1.5, fig.width=3.5, fig.retina=NULL}
+volume <- read.nii.volume(img.noise, 1L)
+coords <- c(round(dim(volume)[1]/5*2), round(dim(volume)[2:3]/2))
+slice1 <- volume[coords[1], , ]
+slice2 <- volume[ , coords[2], ]
+slice3 <- volume[ , , coords[3]]
+pixdims <- unlist(nii.hdr(img.rigid, "pixdim"))[2:4]
+slice1 <- resizeImage(slice1, width=dim(slice1)[1]/(1/pixdims[2]), height=dim(slice1)[2]/(1/pixdims[3]))
+slice2 <- resizeImage(slice2, width=dim(slice2)[1]/(1/pixdims[1]), height=dim(slice2)[2]/(1/pixdims[3]))
+slice3 <- resizeImage(slice3, width=dim(slice3)[1]/(1/pixdims[1]), height=dim(slice3)[2]/(1/pixdims[2]))
+x.offset=nrow(slice1) + nrow(slice2) + nrow(slice3)
+min.val <- min(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+max.val <- max(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+slice.legend <- matrix(seq(min.val, max.val, length.out = ncol(slice3)), ncol=ncol(slice3), nrow=round((nrow(slice1) + nrow(slice2) + nrow(slice3))/40), byrow = TRUE)
+slices <- rbind(slice1, slice2, slice3, slice.legend)
+slices <- melt(slices)
+
+# plot1 <- 
+  ggplot(slices, aes(x=Var1, y=Var2, fill=value)) +
+  theme_bw() +
+  coord_equal(expand=FALSE, clip="off") +
+  scale_fill_viridis() +
+  geom_raster() +
+  annotate("label", x=x.offset, y=-Inf, label=round(min.val,2),
+           hjust=1, vjust=0,
+           color=viridis(1,begin=1,end=1,option="viridis"),
+           fill=viridis(1,begin=0,end=0,option="viridis"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=x.offset, y=Inf, label=round(max.val,2),
+           hjust=1, vjust=1,
+           color=viridis(1,begin=0,end=0,option="viridis"),
+           fill=viridis(1,begin=1,end=1,option="viridis"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=-Inf, y=Inf, label="Noise",
+           hjust=0, vjust=1, color="#000000", fill="#ffffff",
+           label.r=unit(0, "null")) +
+  theme(plot.title = element_blank(),
+        legend.position="none",
+        legend.title = element_blank(),
+        legend.text = element_text(size=8, margin=margin(1,0,0,0,"null")),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        plot.subtitle = element_text(size=10, margin = margin(0,0,0,0,"null")),
+        plot.background=element_blank(),
+        panel.background=element_rect(color="#000000"),
+        panel.grid=element_blank(),
+        panel.border=element_blank(),
+        panel.spacing.x=unit(c(0,0,0,0),"null"),
+        panel.spacing.y=unit(c(0,0,0,0),"null"),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.margin=margin(0,0,0,0, "null"),
+        panel.spacing = margin(0,0,0,0, "null"))
+```
+
+```{r Bias T1T2, fig.height=1.5, fig.width=3.5, fig.retina=NULL}
+volume <- read.nii.volume(img.biast1t2, 1L)
+coords <- c(round(dim(volume)[1]/5*2), round(dim(volume)[2:3]/2))
+slice1 <- volume[coords[1], , ]
+slice2 <- volume[ , coords[2], ]
+slice3 <- volume[ , , coords[3]]
+pixdims <- unlist(nii.hdr(img.rigid, "pixdim"))[2:4]
+slice1 <- resizeImage(slice1, width=dim(slice1)[1]/(1/pixdims[2]), height=dim(slice1)[2]/(1/pixdims[3]))
+slice2 <- resizeImage(slice2, width=dim(slice2)[1]/(1/pixdims[1]), height=dim(slice2)[2]/(1/pixdims[3]))
+slice3 <- resizeImage(slice3, width=dim(slice3)[1]/(1/pixdims[1]), height=dim(slice3)[2]/(1/pixdims[2]))
+x.offset=nrow(slice1) + nrow(slice2) + nrow(slice3)
+min.val <- min(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+max.val <- max(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+slice.legend <- matrix(seq(min.val, max.val, length.out = ncol(slice3)), ncol=ncol(slice3), nrow=round((nrow(slice1) + nrow(slice2) + nrow(slice3))/40), byrow = TRUE)
+slices <- rbind(slice1, slice2, slice3, slice.legend)
+slices <- melt(slices)
+
+# plot2 <- 
+ggplot(slices, aes(x=Var1, y=Var2, fill=value)) +
+  theme_bw() +
+  coord_equal(expand=FALSE, clip="off") +
+  scale_fill_viridis(option="plasma") +
+  geom_raster() +
+  annotate("label", x=x.offset, y=-Inf, label=signif(min.val,2),
+           hjust=1, vjust=0,
+           color=viridis(1,begin=1,end=1,option="plasma"),
+           fill=viridis(1,begin=0,end=0,option="plasma"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=x.offset, y=Inf, label=signif(max.val,2),
+           hjust=1, vjust=1,
+           color=viridis(1,begin=0,end=0,option="plasma"),
+           fill=viridis(1,begin=1,end=1,option="plasma"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=-Inf, y=Inf, label="Bias Field - T1/T2",
+           hjust=0, vjust=1, color="#000000", fill="#ffffff",
+           label.r=unit(0, "null")) +
+  theme(plot.title = element_blank(),
+        legend.position="none",
+        legend.title = element_blank(),
+        legend.text = element_text(size=8, margin=margin(1,0,0,0,"null")),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        plot.subtitle = element_text(size=10, margin = margin(0,0,0,0,"null")),
+        plot.background=element_blank(),
+        panel.background=element_rect(color="#000000"),
+        panel.grid=element_blank(),
+        panel.border=element_blank(),
+        panel.spacing.x=unit(c(0,0,0,0),"null"),
+        panel.spacing.y=unit(c(0,0,0,0),"null"),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.margin=margin(0,0,0,0, "null"),
+        panel.spacing = margin(0,0,0,0, "null"))
+```
+
+```{r Bias N4, fig.height=1.5, fig.width=3.5, fig.retina=NULL}
+volume <- read.nii.volume(img.biasn4, 1L)
+coords <- c(round(dim(volume)[1]/5*2), round(dim(volume)[2:3]/2))
+slice1 <- volume[coords[1], , ]
+slice2 <- volume[ , coords[2], ]
+slice3 <- volume[ , , coords[3]]
+pixdims <- unlist(nii.hdr(img.rigid, "pixdim"))[2:4]
+slice1 <- resizeImage(slice1, width=dim(slice1)[1]/(1/pixdims[2]), height=dim(slice1)[2]/(1/pixdims[3]))
+slice2 <- resizeImage(slice2, width=dim(slice2)[1]/(1/pixdims[1]), height=dim(slice2)[2]/(1/pixdims[3]))
+slice3 <- resizeImage(slice3, width=dim(slice3)[1]/(1/pixdims[1]), height=dim(slice3)[2]/(1/pixdims[2]))
+x.offset=nrow(slice1) + nrow(slice2) + nrow(slice3)
+min.val <- min(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+max.val <- max(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+slice.legend <- matrix(seq(min.val, max.val, length.out = ncol(slice3)), ncol=ncol(slice3), nrow=round((nrow(slice1) + nrow(slice2) + nrow(slice3))/40), byrow = TRUE)
+slices <- rbind(slice1, slice2, slice3, slice.legend)
+slices <- melt(slices)
+
+# plot3 <- 
+ggplot(slices, aes(x=Var1, y=Var2, fill=value)) +
+  theme_bw() +
+  coord_equal(expand=FALSE, clip="off") +
+  scale_fill_viridis(option="plasma") +
+  geom_raster() +
+  annotate("label", x=x.offset, y=-Inf, label=signif(min.val,2),
+           hjust=1, vjust=0,
+           color=viridis(1,begin=1,end=1,option="plasma"),
+           fill=viridis(1,begin=0,end=0,option="plasma"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=x.offset, y=Inf, label=signif(max.val,2),
+           hjust=1, vjust=1,
+           color=viridis(1,begin=0,end=0,option="plasma"),
+           fill=viridis(1,begin=1,end=1,option="plasma"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=-Inf, y=Inf, label="Bias Field - N4",
+           hjust=0, vjust=1, color="#000000", fill="#ffffff",
+           label.r=unit(0, "null")) +
+  theme(plot.title = element_blank(),
+        legend.position="none",
+        legend.title = element_blank(),
+        legend.text = element_text(size=8, margin=margin(1,0,0,0,"null")),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        plot.subtitle = element_text(size=10, margin = margin(0,0,0,0,"null")),
+        plot.background=element_blank(),
+        panel.background=element_rect(color="#000000"),
+        panel.grid=element_blank(),
+        panel.border=element_blank(),
+        panel.spacing.x=unit(c(0,0,0,0),"null"),
+        panel.spacing.y=unit(c(0,0,0,0),"null"),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.margin=margin(0,0,0,0, "null"),
+        panel.spacing = margin(0,0,0,0, "null"))
+```
+
+```{r GM Posterior, fig.height=1.5, fig.width=3.5, fig.retina=NULL}
+volume <- read.nii.volume(prob.gm, 1L)
+coords <- c(round(dim(volume)[1]/5*2), round(dim(volume)[2:3]/2))
+slice1 <- volume[coords[1], , ]
+slice2 <- volume[ , coords[2], ]
+slice3 <- volume[ , , coords[3]]
+pixdims <- unlist(nii.hdr(img.rigid, "pixdim"))[2:4]
+slice1 <- resizeImage(slice1, width=dim(slice1)[1]/(1/pixdims[2]), height=dim(slice1)[2]/(1/pixdims[3]))
+slice2 <- resizeImage(slice2, width=dim(slice2)[1]/(1/pixdims[1]), height=dim(slice2)[2]/(1/pixdims[3]))
+slice3 <- resizeImage(slice3, width=dim(slice3)[1]/(1/pixdims[1]), height=dim(slice3)[2]/(1/pixdims[2]))
+x.offset=nrow(slice1) + nrow(slice2) + nrow(slice3)
+min.val <- min(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+max.val <- max(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+slice.legend <- matrix(seq(min.val, max.val, length.out = ncol(slice3)), ncol=ncol(slice3), nrow=round((nrow(slice1) + nrow(slice2) + nrow(slice3))/40), byrow = TRUE)
+slices <- rbind(slice1, slice2, slice3, slice.legend)
+slices <- melt(slices)
+slices$value[slices$value==0] <- NA
+
+# plot4 <- 
+ggplot(slices, aes(x=Var1, y=Var2, fill=value)) +
+  theme_bw() +
+  coord_equal(expand=FALSE, clip="off") +
+  scale_fill_viridis(option="cividis") +
+  geom_raster() +
+  annotate("label", x=x.offset, y=-Inf, label=round(min.val,2),
+           hjust=1, vjust=0,
+           color=viridis(1,begin=1,end=1,option="cividis"),
+           fill=viridis(1,begin=0,end=0,option="cividis"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=x.offset, y=Inf, label=round(max.val,2),
+           hjust=1, vjust=1,
+           color=viridis(1,begin=0,end=0,option="cividis"),
+           fill=viridis(1,begin=1,end=1,option="cividis"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=-Inf, y=Inf, label="GM Posterior",
+           hjust=0, vjust=1, color="#000000", fill="#ffffff",
+           label.r=unit(0, "null")) +
+  theme(plot.title = element_blank(),
+        legend.position="none",
+        legend.title = element_blank(),
+        legend.text = element_text(size=8, margin=margin(1,0,0,0,"null")),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        plot.subtitle = element_text(size=10, margin = margin(0,0,0,0,"null")),
+        plot.background=element_blank(),
+        panel.background=element_rect(color="#000000"),
+        panel.grid=element_blank(),
+        panel.border=element_blank(),
+        panel.spacing.x=unit(c(0,0,0,0),"null"),
+        panel.spacing.y=unit(c(0,0,0,0),"null"),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.margin=margin(0,0,0,0, "null"),
+        panel.spacing = margin(0,0,0,0, "null"))
+```
+
+```{r WM Posterior, fig.height=1.5, fig.width=3.5, fig.retina=NULL}
+volume <- read.nii.volume(prob.wm, 1L)
+coords <- c(round(dim(volume)[1]/5*2), round(dim(volume)[2:3]/2))
+slice1 <- volume[coords[1], , ]
+slice2 <- volume[ , coords[2], ]
+slice3 <- volume[ , , coords[3]]
+pixdims <- unlist(nii.hdr(img.rigid, "pixdim"))[2:4]
+slice1 <- resizeImage(slice1, width=dim(slice1)[1]/(1/pixdims[2]), height=dim(slice1)[2]/(1/pixdims[3]))
+slice2 <- resizeImage(slice2, width=dim(slice2)[1]/(1/pixdims[1]), height=dim(slice2)[2]/(1/pixdims[3]))
+slice3 <- resizeImage(slice3, width=dim(slice3)[1]/(1/pixdims[1]), height=dim(slice3)[2]/(1/pixdims[2]))
+x.offset=nrow(slice1) + nrow(slice2) + nrow(slice3)
+min.val <- min(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+max.val <- max(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+slice.legend <- matrix(seq(min.val, max.val, length.out = ncol(slice3)), ncol=ncol(slice3), nrow=round((nrow(slice1) + nrow(slice2) + nrow(slice3))/40), byrow = TRUE)
+slices <- rbind(slice1, slice2, slice3, slice.legend)
+slices <- melt(slices)
+slices$value[slices$value==0] <- NA
+
+# plot5 <- 
+ggplot(slices, aes(x=Var1, y=Var2, fill=value)) +
+  theme_bw() +
+  coord_equal(expand=FALSE, clip="off") +
+  scale_fill_viridis(option="cividis") +
+  geom_raster() +
+  annotate("label", x=x.offset, y=-Inf, label=round(min.val,2),
+           hjust=1, vjust=0,
+           color=viridis(1,begin=1,end=1,option="cividis"),
+           fill=viridis(1,begin=0,end=0,option="cividis"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=x.offset, y=Inf, label=round(max.val,2),
+           hjust=1, vjust=1,
+           color=viridis(1,begin=0,end=0,option="cividis"),
+           fill=viridis(1,begin=1,end=1,option="cividis"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=-Inf, y=Inf, label="WM Posterior",
+           hjust=0, vjust=1, color="#000000", fill="#ffffff",
+           label.r=unit(0, "null")) +
+  theme(plot.title = element_blank(),
+        legend.position="none",
+        legend.title = element_blank(),
+        legend.text = element_text(size=8, margin=margin(1,0,0,0,"null")),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        plot.subtitle = element_text(size=10, margin = margin(0,0,0,0,"null")),
+        plot.background=element_blank(),
+        panel.background=element_rect(color="#000000"),
+        panel.grid=element_blank(),
+        panel.border=element_blank(),
+        panel.spacing.x=unit(c(0,0,0,0),"null"),
+        panel.spacing.y=unit(c(0,0,0,0),"null"),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.margin=margin(0,0,0,0, "null"),
+        panel.spacing = margin(0,0,0,0, "null"))
+```
+
+```{r CSF Posterior, fig.height=1.5, fig.width=3.5, fig.retina=NULL}
+volume <- read.nii.volume(prob.csf, 1L)
+coords <- c(round(dim(volume)[1]/5*2), round(dim(volume)[2:3]/2))
+slice1 <- volume[coords[1], , ]
+slice2 <- volume[ , coords[2], ]
+slice3 <- volume[ , , coords[3]]
+pixdims <- unlist(nii.hdr(img.rigid, "pixdim"))[2:4]
+slice1 <- resizeImage(slice1, width=dim(slice1)[1]/(1/pixdims[2]), height=dim(slice1)[2]/(1/pixdims[3]))
+slice2 <- resizeImage(slice2, width=dim(slice2)[1]/(1/pixdims[1]), height=dim(slice2)[2]/(1/pixdims[3]))
+slice3 <- resizeImage(slice3, width=dim(slice3)[1]/(1/pixdims[1]), height=dim(slice3)[2]/(1/pixdims[2]))
+x.offset=nrow(slice1) + nrow(slice2) + nrow(slice3)
+min.val <- min(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+max.val <- max(c(as.numeric(slice1), as.numeric(slice2), as.numeric(slice3)))
+slice.legend <- matrix(seq(min.val, max.val, length.out = ncol(slice3)), ncol=ncol(slice3), nrow=round((nrow(slice1) + nrow(slice2) + nrow(slice3))/40), byrow = TRUE)
+slices <- rbind(slice1, slice2, slice3, slice.legend)
+slices <- melt(slices)
+slices$value[slices$value==0] <- NA
+
+# plot6 <- 
+ggplot(slices, aes(x=Var1, y=Var2, fill=value)) +
+  theme_bw() +
+  coord_equal(expand=FALSE, clip="off") +
+  scale_fill_viridis(option="cividis") +
+  geom_raster() +
+  annotate("label", x=x.offset, y=-Inf, label=round(min.val,2),
+           hjust=1, vjust=0,
+           color=viridis(1,begin=1,end=1,option="cividis"),
+           fill=viridis(1,begin=0,end=0,option="cividis"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=x.offset, y=Inf, label=round(max.val,2),
+           hjust=1, vjust=1,
+           color=viridis(1,begin=0,end=0,option="cividis"),
+           fill=viridis(1,begin=1,end=1,option="cividis"),
+           label.r=unit(0, "null")) +
+  annotate("label", x=-Inf, y=Inf, label="CSF Posterior",
+           hjust=0, vjust=1, color="#000000", fill="#ffffff",
+           label.r=unit(0, "null")) +
+  theme(plot.title = element_blank(),
+        legend.position="none",
+        legend.title = element_blank(),
+        legend.text = element_text(size=8, margin=margin(1,0,0,0,"null")),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        plot.subtitle = element_text(size=10, margin = margin(0,0,0,0,"null")),
+        plot.background=element_blank(),
+        panel.background=element_rect(color="#000000"),
+        panel.grid=element_blank(),
+        panel.border=element_blank(),
+        panel.spacing.x=unit(c(0,0,0,0),"null"),
+        panel.spacing.y=unit(c(0,0,0,0),"null"),
+        plot.margin=margin(0,0,0,0, "null"),
+        legend.margin=margin(0,0,0,0, "null"),
+        panel.spacing = margin(0,0,0,0, "null"))
+```
+
+<P style="page-break-before: always">
+
+```{r}
+wbf[ ,2:3] <- round(wbf[ ,2:3], 3)
+segf[ ,2:4] <- round(segf[ ,2:4], 3)
+kable(wbf, caption="Whole Brain") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                full_width = F, font_size=12, position="float_left")
+
+kable(segf, caption="by Tissue Class") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                full_width = F, font_size=12, position="right")
+```
+
