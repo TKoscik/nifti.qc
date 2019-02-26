@@ -5,5 +5,4 @@ write.qc.bex <- function(researcher, project, subject, session,
   project <- "sca_pilot"
 
   qc.dir <- paste0(researcher, "/", project, "/derivatives/qc/bex")
-  #fname=
 }
