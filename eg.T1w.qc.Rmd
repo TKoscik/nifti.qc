@@ -18,7 +18,6 @@ template <- "800um"
 img.source <- "acq-sagMPRAGEPROMO_T1w"
 scratch.dir <- "/Shared/koscikt_scratch/nifti_qc_scratch"
 nimg.root <- "/Shared/nopoulos/nimg_core"
-norms <- "pcp"
 # ----
 
 img.mod <- unlist(strsplit(img.source, "_"))
