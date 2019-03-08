@@ -42,8 +42,8 @@ nii.qc.mortamet <- function(
   ## Fit Chi^2 distribution
   modelx <- as.numeric(modelx)
   fit.chi <- fitdist(modelx[modelx < quantile(modelx, 0.95)],
-                     distr="chisq", method="mle",
-                     start=list(df=32, ncp=0))
+                     distr="chisq", method= "mle",
+                     start=list(df=32, ncp=0.1), lower=c(0,0))
   exp.pdf <- dchisq(x_grid, fit.chi$estimate[1], fit.chi$estimate[2])
 
   ## calculate goodness of fit
