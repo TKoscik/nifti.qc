@@ -5,7 +5,7 @@ nii.qc.efc <- function(
   img <- read.nii.volume(img.nii, img.vol)
   if (!is.null(frame.mask)) {
     mask <- read.nii.volume(frame.mask, frame.vol)
-    mask <- thresh.apply(mask, mask.dir, mask.thresh, "index.arr")
+    mask <- thresh.apply(mask, frame.dir, frame.thresh, "index.arr")
     img <- img[mask]
   }
   img.max <- sqrt(sum(img^2))
